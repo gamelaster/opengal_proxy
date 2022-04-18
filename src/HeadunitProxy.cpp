@@ -7,6 +7,7 @@ HeadunitProxy::HeadunitProxy()
   : Proxy()
 {
   this->InitializeSSL();
+  this->tag = "HUP";
 }
 
 void HeadunitProxy::ConnectToDevice(uint16_t port)
@@ -22,28 +23,6 @@ void HeadunitProxy::ConnectToDevice(uint16_t port)
 
   if (connect(this->sock, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
     throw std::runtime_error(fmt::format("Failed to connect to phone, reason: {0}", WSAGetLastError()));
-  }
-}
-
-void HeadunitProxy::Run()
-{
-  this->readThread = std::thread(&HeadunitProxy::ReadThread, this);
-  this->readThread.detach();
-}
-
-void HeadunitProxy::ReadThread()
-{
-  while (true) {
-    auto pkt = this->ReadPacket();
-    auto sharedPacket = std::make_shared<Packet>();
-    sharedPacket->flags = pkt.flags;
-    sharedPacket->channel = pkt.channel;
-    if ((sharedPacket->flags & PacketFlags::ENCRYPTED) == PacketFlags::ENCRYPTED) {
-
-    } else {
-      sharedPacket->payload = pkt.payload;
-    }
-    this->onMessageCallback(sharedPacket);
   }
 }
 

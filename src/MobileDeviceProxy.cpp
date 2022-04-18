@@ -6,6 +6,7 @@
 MobileDeviceProxy::MobileDeviceProxy()
 {
   this->InitializeSSL();
+  this->tag = "MDP";
 }
 
 void MobileDeviceProxy::ListenAndWait(uint16_t port)
@@ -34,12 +35,6 @@ void MobileDeviceProxy::ListenAndWait(uint16_t port)
   int addressLength = sizeof(struct sockaddr_in);
   this->sock = accept(this->serverSocket, (struct sockaddr *)&clientAddress, &addressLength); // TODO: Error handling
   fmt::printfl("[MDP] Real HU connected!\n");
-}
-
-void MobileDeviceProxy::Run()
-{
-  this->readThread = std::thread(&MobileDeviceProxy::ReadThread, this);
-  this->readThread.detach();
 }
 
 std::pair<uint16_t, uint16_t> MobileDeviceProxy::ReceiveVersionRequest()
@@ -127,12 +122,10 @@ void MobileDeviceProxy::InitializeSSL()
 
   this->FinishInitializeSSL();
 
+  SSL_CTX_set_cipher_list(this->sslState.sslContext, "ECDHE-RSA-AES128-GCM-SHA256");
+  SSL_CTX_set_ecdh_auto(this->sslState.sslContext, 1);
+
   SSL_set_accept_state(this->sslState.ssl);
   SSL_accept(this->sslState.ssl);
   SSL_set_bio(this->sslState.ssl, this->sslState.readBio, this->sslState.writeBio);
-}
-
-void MobileDeviceProxy::ReadThread()
-{
-
 }

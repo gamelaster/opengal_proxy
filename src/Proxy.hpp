@@ -3,34 +3,43 @@
 #include <functional>
 #include <openssl/ssl.h>
 #include "Packet.hpp"
+#include <readerwriterqueue/readerwriterqueue.h>
 
 #include <cstdint>
 #ifdef WIN32
 #include <WinSock2.h>
 #endif
 
+using namespace moodycamel;
+
 class Proxy
 {
 public:
-  void OnMessageCallback(std::function<bool(std::shared_ptr<Packet>)>&& callback) {
+  void OnMessageCallback(std::function<bool(SharedPacket)>&& callback) {
     this->onMessageCallback = std::move(callback);
   };
 
   virtual void DoSSLHandshake();
   virtual void Run();
+  void ProxyPacket(const SharedPacket& pkt);
 protected:
+  std::string tag = "XXX";
   virtual void SendPacket(Packet& packet);
   virtual Packet ReadPacket();
-  virtual void ReadThread();
+  [[noreturn]] virtual void ReadThread();
+  [[noreturn]] virtual void WriteThread();
   void BeginInitializeSSL(const SSL_METHOD* sslMethod);
   void FinishInitializeSSL();
+  SharedPacket ReadAndProcessPacket();
 
   SOCKET sock;
   std::thread readThread;
-  std::function<bool(std::shared_ptr<Packet>)> onMessageCallback;
+  std::thread writeThread;
+  BlockingReaderWriterQueue<SharedPacket> packetWriteQueue;
+  std::function<bool(SharedPacket)> onMessageCallback;
 
   std::vector<uint8_t> readPacketBuffer = std::vector<uint8_t>(65535);
-  std::vector<uint8_t> writePacketBuffer = std::vector<uint8_t>(65535);
+  std::vector<uint8_t> sendPacketBuffer = std::vector<uint8_t>(65535);
 
   // region SSL stuff
   struct {
@@ -44,4 +53,5 @@ protected:
     SSL_CTX* sslContext;
   } sslState;
   // endregion
+  void ProcessAndWritePacket(const SharedPacket& sharedPacket);
 };

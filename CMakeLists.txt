@@ -12,3 +12,6 @@ target_link_libraries(opengal_proxy PRIVATE
         OpenSSL::SSL
         OpenSSL::Crypto
         fmt::fmt)
+
+find_path(READERWRITERQUEUE_INCLUDE_DIRS "readerwriterqueue/atomicops.h")
+target_include_directories(opengal_proxy PRIVATE ${READERWRITERQUEUE_INCLUDE_DIRS})

@@ -3,7 +3,7 @@
 #include <vector>
 #include <cstdint>
 
-enum class PacketMessageType
+enum class PacketMessageType : uint16_t
 {
   MESSAGE_VERSION_REQUEST = 1,
   MESSAGE_VERSION_RESPONSE = 2,
@@ -66,5 +66,8 @@ public:
   PacketFlags flags;
   // PacketMessageType GetMessageType;
   std::vector<uint8_t> payload;
+  uint32_t finalLength;
   bool isPayloadDecrypted = false;
 };
+
+using SharedPacket = std::shared_ptr<Packet>;

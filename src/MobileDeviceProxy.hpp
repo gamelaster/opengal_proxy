@@ -11,9 +11,7 @@ public:
   void SendVersionResponse(std::tuple<uint16_t, uint16_t, uint16_t> version);
 
   void DoSSLHandshake() override;
-  void Run() override;
 private:
-  void ReadThread() override;
   void InitializeSSL();
 
   SOCKET serverSocket;

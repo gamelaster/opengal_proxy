@@ -11,8 +11,6 @@ public:
   std::tuple<uint16_t, uint16_t, uint16_t> ReceiveVersionResponse();
 
   void DoSSLHandshake() override;
-  void Run() override;
 protected:
-  void ReadThread() override;
   void InitializeSSL();
 };
