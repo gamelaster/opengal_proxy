@@ -45,14 +45,14 @@ std::tuple<uint16_t, uint16_t, uint16_t> HeadunitProxy::ReceiveVersionResponse()
 {
   fmt::printfl("[HUP] Waiting for receiving Version Response from real MD...");
   auto pkt = this->ReadPacket();
-  if (pkt.GetMessageType() != PacketMessageType::MESSAGE_VERSION_RESPONSE) {
+  if (pkt->GetMessageType() != PacketMessageType::MESSAGE_VERSION_RESPONSE) {
     throw std::runtime_error("Not received message response.");
   }
 
   auto versionTuple = std::make_tuple(
-      static_cast<uint16_t>((pkt.payload[4] << 8) | (pkt.payload[5])),
-      static_cast<uint16_t>((pkt.payload[2] << 8) | (pkt.payload[3])),
-      static_cast<uint16_t>((pkt.payload[6] << 8) | (pkt.payload[7])));
+      static_cast<uint16_t>((pkt->payload[4] << 8) | (pkt->payload[5])),
+      static_cast<uint16_t>((pkt->payload[2] << 8) | (pkt->payload[3])),
+      static_cast<uint16_t>((pkt->payload[6] << 8) | (pkt->payload[7])));
 
   fmt::printfl(" Received response with version {0}.{1} (unknown flag {2}).\n", std::get<0>(versionTuple), std::get<1>(versionTuple), std::get<2>(versionTuple));
   return versionTuple;
@@ -83,10 +83,10 @@ void HeadunitProxy::DoSSLHandshake()
       BIO_read(this->sslState.writeBio, &pkt.payload[2], sslDataLength);
       this->SendPacket(pkt);
       auto respPkt = this->ReadPacket();
-      if (respPkt.GetMessageType() != PacketMessageType::MESSAGE_ENCAPSULATED_SSL) {
+      if (respPkt->GetMessageType() != PacketMessageType::MESSAGE_ENCAPSULATED_SSL) {
         throw std::runtime_error("Not received encapsulated SSL.");
       }
-      BIO_write(this->sslState.readBio, &respPkt.payload[2], respPkt.payload.size() - 2);
+      BIO_write(this->sslState.readBio, &respPkt->payload[2], respPkt->payload.size() - 2);
     } else {
       throw std::runtime_error("Something failed during handshake");
     }

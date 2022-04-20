@@ -1,6 +1,7 @@
 #pragma once
 #include <thread>
 #include <functional>
+#include <queue>
 #include <openssl/ssl.h>
 #include "Packet.hpp"
 #include <readerwriterqueue/readerwriterqueue.h>
@@ -21,11 +22,11 @@ public:
 
   virtual void DoSSLHandshake();
   virtual void Run();
-  void ProxyPacket(const SharedPacket& pkt);
+  void ProxyPacket(SharedPacket pkt);
 protected:
   std::string tag = "XXX";
   virtual void SendPacket(Packet& packet);
-  virtual Packet ReadPacket();
+  virtual SharedPacket ReadPacket();
   [[noreturn]] virtual void ReadThread();
   [[noreturn]] virtual void WriteThread();
   void BeginInitializeSSL(const SSL_METHOD* sslMethod);
@@ -35,6 +36,7 @@ protected:
   SOCKET sock;
   std::thread readThread;
   std::thread writeThread;
+  std::queue<SharedPacket> readPacketQueue;
   BlockingReaderWriterQueue<SharedPacket> packetWriteQueue;
   std::function<bool(SharedPacket)> onMessageCallback;
 
@@ -53,5 +55,5 @@ protected:
     SSL_CTX* sslContext;
   } sslState;
   // endregion
-  void ProcessAndWritePacket(const SharedPacket& sharedPacket);
+  void ProcessAndWritePacket(SharedPacket sharedPacket);
 };

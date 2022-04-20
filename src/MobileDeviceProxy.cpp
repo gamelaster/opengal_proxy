@@ -41,12 +41,12 @@ std::pair<uint16_t, uint16_t> MobileDeviceProxy::ReceiveVersionRequest()
 {
   fmt::printfl("[MDP] Waiting for receiving Version Request from real HU...");
   auto pkt = this->ReadPacket();
-  if (pkt.GetMessageType() != PacketMessageType::MESSAGE_VERSION_REQUEST) {
+  if (pkt->GetMessageType() != PacketMessageType::MESSAGE_VERSION_REQUEST) {
     throw std::runtime_error("Not received message request.");
   }
   auto versionPair = std::make_pair(
-      static_cast<uint16_t>((pkt.payload[4] << 8) | (pkt.payload[5])),
-      static_cast<uint16_t>((pkt.payload[2] << 8) | (pkt.payload[3])));
+      static_cast<uint16_t>((pkt->payload[4] << 8) | (pkt->payload[5])),
+      static_cast<uint16_t>((pkt->payload[2] << 8) | (pkt->payload[3])));
 
   fmt::printfl(" Received request for version {0}.{1}.\n", versionPair.first, versionPair.second);
   return versionPair;
@@ -73,10 +73,10 @@ void MobileDeviceProxy::DoSSLHandshake()
   for (int i = 0; i < 2; i++) {
     fmt::printfl("[MDP] Waiting for receiving SSL Handshake from real HU...");
     auto pkt = this->ReadPacket();
-    if (pkt.GetMessageType() != PacketMessageType::MESSAGE_ENCAPSULATED_SSL) {
+    if (pkt->GetMessageType() != PacketMessageType::MESSAGE_ENCAPSULATED_SSL) {
       throw std::runtime_error("Not received encapsulated SSL.");
     }
-    BIO_write(this->sslState.readBio, &pkt.payload[2], pkt.payload.size() - 2);
+    BIO_write(this->sslState.readBio, &pkt->payload[2], pkt->payload.size() - 2);
     int acceptResult = SSL_accept(this->sslState.ssl);
     int error = SSL_get_error(sslState.ssl, acceptResult);
     if (error == SSL_ERROR_SSL) {

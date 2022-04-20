@@ -18,29 +18,53 @@ void Proxy::SendPacket(Packet& packet)
   std::copy(packet.payload.begin(), packet.payload.end(), this->sendPacketBuffer.begin() + 4);
 
   if (send(this->sock, reinterpret_cast<const char*>(&this->sendPacketBuffer[0]), packetSize, 0) < 0) {
-    throw std::runtime_error("Failed to send packet");
+    // throw std::runtime_error("Failed to send packet");
+    fmt::printfl("AAAA\n");
+    while (1) {}
   }
 }
 
-Packet Proxy::ReadPacket()
+SharedPacket Proxy::ReadPacket()
 {
-  int recvSize;
-  if ((recvSize = recv(this->sock, reinterpret_cast<char*>(&this->readPacketBuffer[0]), this->readPacketBuffer.capacity(), 0)) == SOCKET_ERROR) {
-    throw std::runtime_error(fmt::format("Receive failed, reason: {0}", WSAGetLastError()));
-  }
-  uint16_t offset = 0;
-  while (offset < recvSize) {
-    auto contentSize = static_cast<uint16_t>((this->readPacketBuffer[2] << 8) | (this->readPacketBuffer[3]));
-    if (contentSize + 4 != recvSize) {
-      throw std::runtime_error("Content size and receive size mismatch.");
+  if (this->readPacketQueue.empty()) {
+    int recvSize;
+    if ((recvSize = recv(this->sock, reinterpret_cast<char*>(&this->readPacketBuffer[0]), this->readPacketBuffer.capacity(), 0)) == SOCKET_ERROR) {
+      throw std::runtime_error(fmt::format("Receive failed, reason: {0}", WSAGetLastError()));
     }
-    Packet p;
-    p.channel = this->readPacketBuffer[0];
-    p.flags = static_cast<PacketFlags>(this->readPacketBuffer[1]);
-    //p.GetMessageType = static_cast<PacketMessageType>((this->readPacketBuffer[4] << 8) | (this->readPacketBuffer[5]));
-    p.payload = std::vector(this->readPacketBuffer.begin() + 4, this->readPacketBuffer.begin() + 4 + contentSize);
-    return p;
+    if (recvSize == 0) {
+      DebugBreak();
+    }
+    uint16_t offset = 0;
+    while (offset < recvSize) {
+      auto leftSize = recvSize - offset;
+      auto contentSize = static_cast<uint16_t>((this->readPacketBuffer[offset + 2] << 8) | (this->readPacketBuffer[offset + 3]));
+
+      if (contentSize + 4 > leftSize) {
+        throw std::runtime_error("Content size and receive size mismatch.");
+      }
+      auto p = std::make_shared<Packet>();
+      p->channel = this->readPacketBuffer[offset + 0];
+      /*if (p->channel == 2) {
+        DebugBreak();
+      }*/
+      p->flags = static_cast<PacketFlags>(this->readPacketBuffer[offset + 1]);
+//p.GetMessageType = static_cast<PacketMessageType>((this->readPacketBuffer[4] << 8) | (this->readPacketBuffer[5]));
+      p->payload = std::vector(this->readPacketBuffer.begin() + offset + 4, this->readPacketBuffer.begin() + offset + 4 + contentSize);
+      fmt::printfl("{0}, Adding packet\n", this->tag);
+      if (contentSize + 4 == recvSize) {
+        return p;
+      } else {
+        offset += contentSize + 4;
+        this->readPacketQueue.push(p);
+      }
+    }
+    if (this->readPacketQueue.empty()) {
+      throw std::runtime_error("Fuck");
+    }
   }
+  auto firstPacket = this->readPacketQueue.front(); // TODO: Improve this, ugly...
+  this->readPacketQueue.pop();
+  return firstPacket;
 }
 
 SharedPacket Proxy::ReadAndProcessPacket()
@@ -49,19 +73,18 @@ SharedPacket Proxy::ReadAndProcessPacket()
   auto pkt = this->ReadPacket();
   fmt::printfl("[{0}] Packet received!\n", this->tag);
   auto sharedPacket = std::make_shared<Packet>();
-  sharedPacket->flags = pkt.flags;
-  sharedPacket->channel = pkt.channel;
+  sharedPacket->flags = pkt->flags;
+  sharedPacket->channel = pkt->channel;
   if ((sharedPacket->flags & PacketFlags::ENCRYPTED) == PacketFlags::ENCRYPTED) {
     if ((sharedPacket->flags & PacketFlags::BATCH) == PacketFlags::FRAG_FIRST) {
       throw std::runtime_error("FRAG_FIRST not implemented :(");
     }
-    if (BIO_write(this->sslState.readBio, &pkt.payload[0], pkt.payload.size()) != pkt.payload.size()) {
+    if (BIO_write(this->sslState.readBio, &pkt->payload[0], pkt->payload.size()) != pkt->payload.size()) {
       throw std::runtime_error("Failed to write data to read bio");
     }
-    sharedPacket->payload = std::vector<uint8_t>(pkt.payload.size());
+    sharedPacket->payload = std::vector<uint8_t>(pkt->payload.size());
     auto readResult = SSL_read(this->sslState.ssl, &sharedPacket->payload[0], sharedPacket->payload.size());
     // fmt::printfl("[{0}] SSL pending: {1}, size: {2}, returned: {3}\n", this->tag, SSL_pending(this->sslState.ssl), sharedPacket->payload.size(), readResult);
-    sharedPacket->payload.resize(readResult);
     if (readResult < 0) {
       int error = SSL_get_error(this->sslState.ssl, readResult);
       if (error != SSL_ERROR_WANT_READ) {
@@ -70,14 +93,14 @@ SharedPacket Proxy::ReadAndProcessPacket()
         // TODO: Exception?
       }
     }
-    Utils::Dump("test.bin", sharedPacket->payload);
+    sharedPacket->payload.resize(readResult);
   } else {
-    sharedPacket->payload = pkt.payload;
+    sharedPacket->payload = pkt->payload;
   }
   return sharedPacket;
 }
 
-void Proxy::ProcessAndWritePacket(const SharedPacket& sharedPacket)
+void Proxy::ProcessAndWritePacket(SharedPacket sharedPacket)
 {
   auto pkt = Packet();
   pkt.flags = sharedPacket->flags;
@@ -103,7 +126,7 @@ void Proxy::ProcessAndWritePacket(const SharedPacket& sharedPacket)
   this->SendPacket(pkt);
 }
 
-void Proxy::ProxyPacket(const SharedPacket& pkt)
+void Proxy::ProxyPacket(SharedPacket pkt)
 {
   this->packetWriteQueue.enqueue(pkt);
 }

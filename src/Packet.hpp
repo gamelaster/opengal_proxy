@@ -38,6 +38,7 @@ enum class PacketFlags : uint8_t
 {
   FRAG_FIRST = 0b0001,
   FRAG_LAST = 0b0010,
+  EMPTY = 0b0100, // NOT SURE
   BATCH = 0b0011,
   ENCRYPTED = 0b1000,
 };
