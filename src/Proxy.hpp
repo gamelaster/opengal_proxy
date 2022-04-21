@@ -16,29 +16,16 @@ using namespace moodycamel;
 class Proxy
 {
 public:
-  void OnMessageCallback(std::function<bool(SharedPacket)>&& callback) {
-    this->onMessageCallback = std::move(callback);
-  };
-
   virtual void DoSSLHandshake();
-  virtual void Run();
-  void ProxyPacket(SharedPacket pkt);
 protected:
   std::string tag = "XXX";
   virtual void SendPacket(Packet& packet);
   virtual SharedPacket ReadPacket();
-  [[noreturn]] virtual void ReadThread();
-  [[noreturn]] virtual void WriteThread();
   void BeginInitializeSSL(const SSL_METHOD* sslMethod);
   void FinishInitializeSSL();
-  SharedPacket ReadAndProcessPacket();
-
   SOCKET sock;
   std::thread readThread;
   std::thread writeThread;
-  std::queue<SharedPacket> readPacketQueue;
-  BlockingReaderWriterQueue<SharedPacket> packetWriteQueue;
-  std::function<bool(SharedPacket)> onMessageCallback;
 
   std::vector<uint8_t> readPacketBuffer = std::vector<uint8_t>(65535);
   std::vector<uint8_t> sendPacketBuffer = std::vector<uint8_t>(65535);
@@ -55,5 +42,4 @@ protected:
     SSL_CTX* sslContext;
   } sslState;
   // endregion
-  void ProcessAndWritePacket(SharedPacket sharedPacket);
 };

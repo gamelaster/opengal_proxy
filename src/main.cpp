@@ -43,20 +43,6 @@ int main(int argc, char** argv)
     hup.DoSSLHandshake();
     mdp.DoSSLHandshake();
 
-    hup.OnMessageCallback([&mdp](SharedPacket pkt) {
-      fmt::printfl("[HUP] Sending packet ch {1}, {0} ({2:x}) to real HU.\n", pkt->GetMessageType(), pkt->channel, pkt->flags);
-      mdp.ProxyPacket(pkt);
-      return true;
-    });
-
-    mdp.OnMessageCallback([&hup](SharedPacket pkt) {
-      fmt::printfl("[MDP] Sending packet ch {1}, {0} ({2:x}) to real MD.\n", pkt->GetMessageType(), pkt->channel, pkt->flags);
-      hup.ProxyPacket(pkt);
-      return true;
-    });
-
-    hup.Run();
-    mdp.Run();
 
     fmt::printfl("Press any key to shutdown the proxy.\n");
     getchar();
