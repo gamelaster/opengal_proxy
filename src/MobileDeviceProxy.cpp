@@ -113,11 +113,11 @@ void MobileDeviceProxy::InitializeSSL()
   BIO_free(bio);
 
   bio = BIO_new_mem_buf(Certificates::MobileDevicePublicCertificate, strlen(Certificates::MobileDevicePublicCertificate));
-  this->sslState.devicePublicKey = PEM_read_bio_X509(bio, 0, 0, 0);
+  this->sslState.publicCertificate = PEM_read_bio_X509(bio, 0, 0, 0);
   BIO_free(bio);
 
   bio = BIO_new_mem_buf(Certificates::MobileDevicePrivateKey, strlen(Certificates::MobileDevicePrivateKey));
-  this->sslState.devicePrivateKey = PEM_read_bio_PrivateKey(bio, 0, 0, 0);
+  this->sslState.privateCertificate = PEM_read_bio_PrivateKey(bio, 0, 0, 0);
   BIO_free(bio);
 
   this->FinishInitializeSSL();

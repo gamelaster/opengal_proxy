@@ -102,11 +102,11 @@ void HeadunitProxy::InitializeSSL()
   BIO_free(bio);
 
   bio = BIO_new_mem_buf(Certificates::HeadunitPublicCertificate, strlen(Certificates::HeadunitPublicCertificate));
-  this->sslState.devicePublicKey = PEM_read_bio_X509(bio, 0, 0, 0);
+  this->sslState.publicCertificate = PEM_read_bio_X509(bio, 0, 0, 0);
   BIO_free(bio);
 
   bio = BIO_new_mem_buf(Certificates::HeadunitPrivateKey, strlen(Certificates::HeadunitPrivateKey));
-  this->sslState.devicePrivateKey = PEM_read_bio_PrivateKey(bio, 0, 0, 0);
+  this->sslState.privateCertificate = PEM_read_bio_PrivateKey(bio, 0, 0, 0);
   BIO_free(bio);
 
   this->FinishInitializeSSL();

@@ -24,17 +24,19 @@ protected:
   void BeginInitializeSSL(const SSL_METHOD* sslMethod);
   void FinishInitializeSSL();
   SOCKET sock;
-  std::thread readThread;
-  std::thread writeThread;
 
-  std::vector<uint8_t> readPacketBuffer = std::vector<uint8_t>(65535);
-  std::vector<uint8_t> sendPacketBuffer = std::vector<uint8_t>(65535);
+  /**
+   * According to source code, default max fragment size is 16128, but MD can have it larger up to 65539.
+   * For now, I will keep the maximum uint16_t size.
+   */
+  std::vector<uint8_t> incomingPacketBuffer = std::vector<uint8_t>(65535);
+  std::vector<uint8_t> outgoingPacketBuffer = std::vector<uint8_t>(65535);
 
   // region SSL stuff
   struct {
     X509* rootCertificate;
-    X509* devicePublicKey;
-    EVP_PKEY* devicePrivateKey;
+    X509* publicCertificate;
+    EVP_PKEY* privateCertificate;
     BIO* readBio;
     BIO* writeBio;
     SSL* ssl;

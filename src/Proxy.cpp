@@ -30,11 +30,11 @@ void Proxy::BeginInitializeSSL(const SSL_METHOD* sslMethod)
 
 void Proxy::FinishInitializeSSL()
 {
-  if (SSL_CTX_use_certificate(this->sslState.sslContext, sslState.devicePublicKey) != 1) {
+  if (SSL_CTX_use_certificate(this->sslState.sslContext, sslState.publicCertificate) != 1) {
     throw std::runtime_error("Set Client Cert failed");
   }
 
-  if (SSL_CTX_use_PrivateKey(this->sslState.sslContext, sslState.devicePrivateKey) != 1) {
+  if (SSL_CTX_use_PrivateKey(this->sslState.sslContext, sslState.privateCertificate) != 1) {
     throw std::runtime_error("Set Private Key failed");
   }
 
