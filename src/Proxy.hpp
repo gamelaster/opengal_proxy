@@ -17,13 +17,27 @@ class Proxy
 {
 public:
   virtual void DoSSLHandshake();
+  void Run();
+  SharedPacket DequeueIncomingPacket();
+  void EnqueueOutgoingPacket(SharedPacket packet);
 protected:
   std::string tag = "XXX";
-  virtual void SendPacket(Packet& packet);
-  virtual SharedPacket ReadPacket();
+  void ProcessAndWritePacket(const SharedPacket& packet);
   void BeginInitializeSSL(const SSL_METHOD* sslMethod);
   void FinishInitializeSSL();
+  uint32_t ReadPacket();
+  void WritePacket(uint32_t length);
+  void DecryptIncomingPacket(const SharedPacket& packet, const std::vector<uint8_t>::iterator& payloadPosition, uint32_t payloadSize) const;
+  uint32_t EncryptPacket(std::vector<uint8_t>::iterator payloadBeginPos, std::vector<uint8_t>::iterator payloadEndPos, std::vector<uint8_t>::iterator destinationPayloadPos);
+  [[noreturn]] void IncomingPacketReadThread();
+  [[noreturn]] void OutgoingPacketWriteThread();
+
   SOCKET sock;
+
+  std::thread incomingPacketReadThread;
+  BlockingReaderWriterQueue<SharedPacket> incomingPacketQueue;
+  std::thread outgoingPacketWriteThread;
+  BlockingReaderWriterQueue<SharedPacket> outgoingPacketQueue;
 
   /**
    * According to source code, default max fragment size is 16128, but MD can have it larger up to 65539.

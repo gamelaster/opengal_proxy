@@ -28,23 +28,23 @@ void HeadunitProxy::ConnectToDevice(uint16_t port)
 
 void HeadunitProxy::SendVersionRequest(std::pair<uint16_t, uint16_t> version)
 {
-  Packet pkt;
-  pkt.channel = 0x00;
-  pkt.flags = PacketFlags::BATCH;
-  pkt.payload = std::vector<uint8_t>(6);
-  pkt.SetMessageType(PacketMessageType::MESSAGE_VERSION_REQUEST);
-  pkt.payload[2] = (version.second >> 8) & 0xFF;
-  pkt.payload[3] = (version.second) & 0xFF;
-  pkt.payload[4] = (version.first >> 8) & 0xFF;
-  pkt.payload[5] = (version.first) & 0xFF;
+  auto pkt = std::make_shared<Packet>();
+  pkt->channel = 0x00;
+  pkt->flags = PacketFlags::BATCH;
+  pkt->payload = std::vector<uint8_t>(6);
+  pkt->SetMessageType(PacketMessageType::MESSAGE_VERSION_REQUEST);
+  pkt->payload[2] = (version.second >> 8) & 0xFF;
+  pkt->payload[3] = (version.second) & 0xFF;
+  pkt->payload[4] = (version.first >> 8) & 0xFF;
+  pkt->payload[5] = (version.first) & 0xFF;
   fmt::printfl("[HUP] Sending version request to real MD...\n");
-  this->SendPacket(pkt);
+  this->ProcessAndWritePacket(pkt);
 }
 
 std::tuple<uint16_t, uint16_t, uint16_t> HeadunitProxy::ReceiveVersionResponse()
 {
   fmt::printfl("[HUP] Waiting for receiving Version Response from real MD...");
-  auto pkt = this->ReadPacket();
+  auto pkt = this->DequeueIncomingPacket();
   if (pkt->GetMessageType() != PacketMessageType::MESSAGE_VERSION_RESPONSE) {
     throw std::runtime_error("Not received message response.");
   }
@@ -75,14 +75,14 @@ void HeadunitProxy::DoSSLHandshake()
       fmt::printfl("[HUP] Handshake finished, SSL version={0}, cipher={1}\n", version, currentCipherName);
     } else if (error == SSL_ERROR_WANT_READ) {
       int sslDataLength = BIO_pending(sslState.writeBio);
-      Packet pkt;
-      pkt.channel = 0x00;
-      pkt.flags = PacketFlags::BATCH;
-      pkt.payload = std::vector<uint8_t>(sslDataLength + 2);
-      pkt.SetMessageType(PacketMessageType::MESSAGE_ENCAPSULATED_SSL);
-      BIO_read(this->sslState.writeBio, &pkt.payload[2], sslDataLength);
-      this->SendPacket(pkt);
-      auto respPkt = this->ReadPacket();
+      auto pkt = std::make_shared<Packet>();
+      pkt->channel = 0x00;
+      pkt->flags = PacketFlags::BATCH;
+      pkt->payload = std::vector<uint8_t>(sslDataLength + 2);
+      pkt->SetMessageType(PacketMessageType::MESSAGE_ENCAPSULATED_SSL);
+      BIO_read(this->sslState.writeBio, &pkt->payload[2], sslDataLength);
+      this->ProcessAndWritePacket(pkt);
+      auto respPkt = this->DequeueIncomingPacket();
       if (respPkt->GetMessageType() != PacketMessageType::MESSAGE_ENCAPSULATED_SSL) {
         throw std::runtime_error("Not received encapsulated SSL.");
       }

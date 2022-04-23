@@ -40,7 +40,7 @@ void MobileDeviceProxy::ListenAndWait(uint16_t port)
 std::pair<uint16_t, uint16_t> MobileDeviceProxy::ReceiveVersionRequest()
 {
   fmt::printfl("[MDP] Waiting for receiving Version Request from real HU...");
-  auto pkt = this->ReadPacket();
+  auto pkt = this->DequeueIncomingPacket();
   if (pkt->GetMessageType() != PacketMessageType::MESSAGE_VERSION_REQUEST) {
     throw std::runtime_error("Not received message request.");
   }
@@ -54,25 +54,25 @@ std::pair<uint16_t, uint16_t> MobileDeviceProxy::ReceiveVersionRequest()
 
 void MobileDeviceProxy::SendVersionResponse(std::tuple<uint16_t, uint16_t, uint16_t> version)
 {
-  Packet pkt;
-  pkt.channel = 0x00;
-  pkt.flags = PacketFlags::BATCH;
-  pkt.payload = std::vector<uint8_t>(8);
-  pkt.SetMessageType(PacketMessageType::MESSAGE_VERSION_RESPONSE);
-  pkt.payload[2] = (std::get<1>(version) >> 8) & 0xFF;
-  pkt.payload[3] = (std::get<1>(version)) & 0xFF;
-  pkt.payload[4] = (std::get<0>(version) >> 8) & 0xFF;
-  pkt.payload[5] = (std::get<0>(version)) & 0xFF;
-  pkt.payload[6] = (std::get<2>(version) >> 8) & 0xFF;
-  pkt.payload[7] = (std::get<2>(version)) & 0xFF;
-  this->SendPacket(pkt);
+  auto pkt = std::make_shared<Packet>();
+  pkt->channel = 0x00;
+  pkt->flags = PacketFlags::BATCH;
+  pkt->payload = std::vector<uint8_t>(8);
+  pkt->SetMessageType(PacketMessageType::MESSAGE_VERSION_RESPONSE);
+  pkt->payload[2] = (std::get<1>(version) >> 8) & 0xFF;
+  pkt->payload[3] = (std::get<1>(version)) & 0xFF;
+  pkt->payload[4] = (std::get<0>(version) >> 8) & 0xFF;
+  pkt->payload[5] = (std::get<0>(version)) & 0xFF;
+  pkt->payload[6] = (std::get<2>(version) >> 8) & 0xFF;
+  pkt->payload[7] = (std::get<2>(version)) & 0xFF;
+  this->ProcessAndWritePacket(pkt);
 }
 
 void MobileDeviceProxy::DoSSLHandshake()
 {
   for (int i = 0; i < 2; i++) {
     fmt::printfl("[MDP] Waiting for receiving SSL Handshake from real HU...");
-    auto pkt = this->ReadPacket();
+    auto pkt = this->DequeueIncomingPacket();
     if (pkt->GetMessageType() != PacketMessageType::MESSAGE_ENCAPSULATED_SSL) {
       throw std::runtime_error("Not received encapsulated SSL.");
     }
@@ -94,13 +94,13 @@ void MobileDeviceProxy::DoSSLHandshake()
       fmt::printfl("[MDP] Handshake finished, SSL version={0}, cipher={1}\n", version, currentCipherName);
     }
     int sslDataLength = BIO_pending(sslState.writeBio);
-    Packet respPkt;
-    respPkt.channel = 0x00;
-    respPkt.flags = PacketFlags::BATCH;
-    respPkt.payload = std::vector<uint8_t>(sslDataLength + 2);
-    respPkt.SetMessageType(PacketMessageType::MESSAGE_ENCAPSULATED_SSL);
-    BIO_read(this->sslState.writeBio, &respPkt.payload[2], sslDataLength);
-    this->SendPacket(respPkt);
+    auto respPkt = std::make_shared<Packet>();
+    respPkt->channel = 0x00;
+    respPkt->flags = PacketFlags::BATCH;
+    respPkt->payload = std::vector<uint8_t>(sslDataLength + 2);
+    respPkt->SetMessageType(PacketMessageType::MESSAGE_ENCAPSULATED_SSL);
+    BIO_read(this->sslState.writeBio, &respPkt->payload[2], sslDataLength);
+    this->ProcessAndWritePacket(respPkt);
   }
 }
 
