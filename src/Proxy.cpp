@@ -87,22 +87,33 @@ void Proxy::Run()
     auto readLength = this->ReadPacket();
     uint32_t offset = 0;
     while (offset < readLength) {
+      auto flags = static_cast<PacketFlags>(this->incomingPacketBuffer[offset + 1]);
+      uint8_t headerSize = 4;
+      if ((flags & PacketFlags::BATCH) == PacketFlags::FRAG_FIRST) {
+        headerSize = 8;
+      }
       auto leftSize = readLength - offset;
-      auto payloadSize = static_cast<uint16_t>((this->incomingPacketBuffer[offset + 2] << 8) | (this->incomingPacketBuffer[offset + 3]));
-      if (payloadSize + 4 > leftSize) {
+      auto payloadSize = static_cast<uint32_t>((this->incomingPacketBuffer[offset + 2] << 8) | (this->incomingPacketBuffer[offset + 3]));
+      if (payloadSize + headerSize > leftSize) {
         throw std::runtime_error("Content size and receive size mismatch.");
       }
       auto p = std::make_shared<Packet>();
       p->channel = this->incomingPacketBuffer[offset + 0];
-      p->flags = static_cast<PacketFlags>(this->incomingPacketBuffer[offset + 1]);
-      auto payloadPosition = this->incomingPacketBuffer.begin() + offset + 4;
+      p->flags = flags;
+      if ((flags & PacketFlags::BATCH) == PacketFlags::FRAG_FIRST) {
+        p->finalLength = (this->incomingPacketBuffer[offset + 4] << 24) |
+                          (this->incomingPacketBuffer[offset + 5] << 16) |
+                          (this->incomingPacketBuffer[offset + 6] << 8) |
+                          (this->incomingPacketBuffer[offset + 7]);
+      }
+      auto payloadPosition = this->incomingPacketBuffer.begin() + offset + headerSize;
       if ((p->flags & PacketFlags::ENCRYPTED) == PacketFlags::ENCRYPTED) {
         this->DecryptIncomingPacket(p, payloadPosition, payloadSize);
       } else {
-        p->payload = std::vector(this->incomingPacketBuffer.begin() + offset + 4, this->incomingPacketBuffer.begin() + offset + 4 + payloadSize);
+        p->payload = std::vector(this->incomingPacketBuffer.begin() + offset + headerSize, this->incomingPacketBuffer.begin() + offset + headerSize + payloadSize);
       }
       this->incomingPacketQueue.enqueue(p);
-      offset += payloadSize + 4;
+      offset += payloadSize + headerSize;
     }
   }
 }
@@ -147,10 +158,13 @@ void Proxy::OutgoingPacketWriteThread()
 void Proxy::ProcessAndWritePacket(const SharedPacket& packet)
 {
   uint32_t headerSize = 4;
-  uint32_t payloadSize = 0;
+  uint32_t payloadSize;
+  if ((packet->flags & PacketFlags::BATCH) == PacketFlags::FRAG_FIRST) {
+    headerSize = 8;
+  }
   this->outgoingPacketBuffer[0] = packet->channel;
   this->outgoingPacketBuffer[1] = static_cast<uint8_t>(packet->flags);
-  auto payloadPosition = this->outgoingPacketBuffer.begin() + 4;
+  auto payloadPosition = this->outgoingPacketBuffer.begin() + headerSize;
   if ((packet->flags & PacketFlags::ENCRYPTED) == PacketFlags::ENCRYPTED) {
     payloadSize = this->EncryptPacket(packet->payload.begin(), packet->payload.end(), payloadPosition);
   } else {
@@ -159,6 +173,12 @@ void Proxy::ProcessAndWritePacket(const SharedPacket& packet)
   }
   this->outgoingPacketBuffer[2] = (payloadSize >> 8) & 0xFF;
   this->outgoingPacketBuffer[3] = payloadSize & 0xFF;
+  if ((packet->flags & PacketFlags::BATCH) == PacketFlags::FRAG_FIRST) {
+    this->outgoingPacketBuffer[4] = (packet->finalLength >> 24) & 0xFF;
+    this->outgoingPacketBuffer[5] = (packet->finalLength >> 16) & 0xFF;
+    this->outgoingPacketBuffer[6] = (packet->finalLength >> 8) & 0xFF;
+    this->outgoingPacketBuffer[7] = packet->finalLength & 0xFF;
+  }
   this->WritePacket(headerSize + payloadSize);
 }
 

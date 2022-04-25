@@ -43,8 +43,8 @@ protected:
    * According to source code, default max fragment size is 16128, but MD can have it larger up to 65539.
    * For now, I will keep the maximum uint16_t size.
    */
-  std::vector<uint8_t> incomingPacketBuffer = std::vector<uint8_t>(65535);
-  std::vector<uint8_t> outgoingPacketBuffer = std::vector<uint8_t>(65535);
+  std::vector<uint8_t> incomingPacketBuffer = std::vector<uint8_t>(65535 * 4);
+  std::vector<uint8_t> outgoingPacketBuffer = std::vector<uint8_t>(65535 * 4);
 
   // region SSL stuff
   struct {
