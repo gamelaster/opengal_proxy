@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright 2022 Marek Kraus <gamelaster@outlook.com>
+
 #include "MobileDeviceProxy.hpp"
 #include "Certificates.hpp"
 #include "Utils.hpp"

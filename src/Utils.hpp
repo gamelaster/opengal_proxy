@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright 2022 Marek Kraus <gamelaster@outlook.com>
+
 #pragma once
 
 #include <fmt/printf.h>
