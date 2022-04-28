@@ -1,6 +1,17 @@
 # OpenGAL Proxy
 Is proxy server, with which you can easily sniff packets transmitted between Android Auto Headunit and Mobile Device. 
 
+# Building
+
+Windows:
+```
+vcpkg install openssl fmt readerwriterqueue libpcap
+mkdir build
+cd build
+cmake ..
+cmake -b .
+```
+
 # Supported features
 
 - [X] Proxy packets between MD and HU
