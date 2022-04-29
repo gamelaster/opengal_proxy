@@ -15,7 +15,7 @@ cmake -b .
 # Supported features
 
 - [X] Proxy packets between MD and HU
-- [ ] Save packets into pcap file
+- [X] Save packets into pcap file
 
 # Supported platforms
 
