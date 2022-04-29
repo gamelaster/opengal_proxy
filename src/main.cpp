@@ -7,6 +7,7 @@
 #include "HeadunitProxy.hpp"
 #include <openssl/applink.c>
 #include "Utils.hpp"
+#include "PcapDumper.hpp"
 
 #ifdef WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -31,6 +32,9 @@ int main(int argc, char** argv)
 
   fmt::printfl("OpenGAL Proxy v1.0\nAuthor: Marek gamelaster/gamiee Kraus\n");
   try {
+    auto dumper = PcapDumper();
+    dumper.Run("dump.pcap");
+
     auto mdp = MobileDeviceProxy();
     auto hup = HeadunitProxy();
 
@@ -53,6 +57,10 @@ int main(int argc, char** argv)
         auto pkt = hup.DequeueIncomingPacket();
         fmt::printfl("[HUP] Sending packet ch {1}, {0} ({2:x}) to real HU.\n", pkt->GetMessageType(), pkt->channel, pkt->flags);
         mdp.EnqueueOutgoingPacket(pkt);
+        dumper.DumpPacket({
+                            pkt,
+                            SharedPacketForDumpSender::MOBILE_DEVICE
+                          });
       }
     });
     hupProxy.detach();
@@ -62,6 +70,10 @@ int main(int argc, char** argv)
         auto pkt = mdp.DequeueIncomingPacket();
         fmt::printfl("[MDP] Sending packet ch {1}, {0} ({2:x}) to real MD.\n", pkt->GetMessageType(), pkt->channel, pkt->flags);
         hup.EnqueueOutgoingPacket(pkt);
+        dumper.DumpPacket({
+                            pkt,
+                            SharedPacketForDumpSender::HEADUNIT
+                          });
       }
     });
     mdpProxy.detach();

@@ -5,7 +5,7 @@ Is proxy server, with which you can easily sniff packets transmitted between And
 
 Windows:
 ```
-vcpkg install openssl fmt readerwriterqueue libpcap
+vcpkg install openssl fmt readerwriterqueue winpcap
 mkdir build
 cd build
 cmake ..

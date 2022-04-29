@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <cstdint>
+#include <memory>
 
 enum class PacketMessageType : uint16_t
 {
