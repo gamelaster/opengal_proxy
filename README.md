@@ -15,7 +15,8 @@ cmake -b .
 # Supported features
 
 - [X] Proxy packets between MD and HU
-- [X] Save packets into pcap file
+- [X] ~Save packets into pcap file~
+- [ ] Wireshark's extcap support
 
 # Supported platforms
 
