@@ -10,9 +10,9 @@
 
 // Because libfmt doesn't flush by default... *sigh
 namespace fmt {
-  template<typename S, typename... Args>
+  template<typename S, typename... Args, typename Char = enable_if_t<detail::is_string<S>::value, char_t<S>>>
   inline void printfl(const S& formatString, Args&&... args) {
-    fmt::vprint(formatString, fmt::make_args_checked<Args...>(formatString, args...));
+    fmt::vprint(formatString, fmt::make_format_args<buffer_context<char_t<S>>>(args...));
     std::fflush(stdout);
   }
 };
