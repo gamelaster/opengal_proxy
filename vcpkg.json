@@ -1,0 +1,19 @@
+{
+  "name" : "opengal-proxy",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "662dbb50e63af15baa2909b7eac5b1b87e86a0aa",
+  "dependencies" : [ {
+    "name" : "openssl",
+    "version>=" : "3.1.1"
+  }, {
+    "name" : "winpcap",
+    "version>=" : "4.1.3#10"
+  }, {
+    "name" : "readerwriterqueue",
+    "version>=" : "1.0.6"
+  }, {
+    "name" : "fmt",
+    "version>=" : "10.0.0",
+    "$comment" : "    find_package(fmt CONFIG REQUIRED)\n\n    target_link_libraries(main PRIVATE fmt::fmt)\n"
+  } ]
+}
