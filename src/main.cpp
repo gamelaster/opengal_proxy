@@ -10,6 +10,7 @@
 #include "PcapDumper.hpp"
 #endif
 #include "Utils.hpp"
+#include "ImGUIAnalyzer.hpp"
 
 #ifdef WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -37,6 +38,13 @@ int main(int argc, char** argv)
 #ifdef WIN32
     auto dumper = PcapDumper();
     dumper.Run("dump.pcap");
+#else
+    auto gui = ImGUIAnalyzer();
+    gui.Initialize();
+    gui.Run();
+//    while (1) {
+//      sleep(10);
+//    }
 #endif
 
     auto mdp = MobileDeviceProxy();
@@ -63,6 +71,9 @@ int main(int argc, char** argv)
                      static_cast<uint16_t>(pkt->GetMessageType()),
                      pkt->channel,
                      static_cast<uint16_t>(pkt->flags));
+        if (gui.AddPacket(ImGUIAnalyzer::PacketSource::MOBILE_DEVICE, pkt)) {
+          continue;
+        }
         mdp.EnqueueOutgoingPacket(pkt);
 #ifdef WIN32
         dumper.DumpPacket({
@@ -81,6 +92,9 @@ int main(int argc, char** argv)
                      static_cast<uint16_t>(pkt->GetMessageType()),
                      pkt->channel,
                      static_cast<uint16_t>(pkt->flags));
+        if (gui.AddPacket(ImGUIAnalyzer::PacketSource::HEADUNIT, pkt)) {
+          continue;
+        }
         hup.EnqueueOutgoingPacket(pkt);
 #ifdef WIN32
         dumper.DumpPacket({

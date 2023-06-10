@@ -21,6 +21,7 @@ If you need help, contact me at `som (:D) marekkraus.sk`.
 
 ## Compiling
 ```bash
+git submodule update --init --recursive
 mkdir build
 cd build
 cmake ..
@@ -30,8 +31,9 @@ cmake -b .
 # Supported features
 
 - [X] Proxy packets between MD and HU
-- [X] ~Save packets into pcap file~
-- [ ] Wireshark's extcap support
+- [X] ~~Save packets into pcap file~~
+- [ ] ~~Wireshark's extcap support~~
+- [ ] ImGUI Analyzer
 
 # Supported platforms
 
