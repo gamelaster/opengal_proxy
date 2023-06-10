@@ -4,6 +4,7 @@
 #include <openssl/err.h>
 #include "Proxy.hpp"
 #include "Utils.hpp"
+#include "SocketUtils.hpp"
 
 void Proxy::DoSSLHandshake()
 {
@@ -143,8 +144,8 @@ uint32_t Proxy::ReadPacket()
 {
   // TODO: Make this abstract to support multiple transports like USB or wireless (not via ADB)
   int recvSize;
-  if ((recvSize = recv(this->sock, reinterpret_cast<char*>(&this->incomingPacketBuffer[0]), this->incomingPacketBuffer.capacity(), 0)) == SOCKET_ERROR) {
-    throw std::runtime_error(fmt::format("Receive failed, reason: {0}", WSAGetLastError()));
+  if ((recvSize = recv(this->sock, reinterpret_cast<char*>(&this->incomingPacketBuffer[0]), this->incomingPacketBuffer.capacity(), 0)) == SCKT_RET_ERROR) {
+    throw std::runtime_error(fmt::format("Receive failed, reason: {0}", SCKT_GET_ERROR));
   }
   return recvSize;
 }

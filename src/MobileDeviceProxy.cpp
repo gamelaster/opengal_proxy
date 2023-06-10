@@ -4,7 +4,12 @@
 #include "MobileDeviceProxy.hpp"
 #include "Certificates.hpp"
 #include "Utils.hpp"
+#include "SocketUtils.hpp"
 #include <openssl/err.h>
+#ifndef WIN32
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
 
 MobileDeviceProxy::MobileDeviceProxy()
 {
@@ -14,8 +19,8 @@ MobileDeviceProxy::MobileDeviceProxy()
 
 void MobileDeviceProxy::ListenAndWait(uint16_t port)
 {
-  if ((this->serverSocket = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
-    throw std::runtime_error(fmt::format("[MDP] Failed to create socket, reason: {0}", WSAGetLastError()));
+  if ((this->serverSocket = socket(AF_INET, SOCK_STREAM, 0)) == SCKT_RET_ERROR) {
+    throw std::runtime_error(fmt::format("[MDP] Failed to create socket, reason: {0}", SCKT_GET_ERROR));
   }
 
   struct sockaddr_in serverAddress;
@@ -23,19 +28,23 @@ void MobileDeviceProxy::ListenAndWait(uint16_t port)
   serverAddress.sin_family = AF_INET;
   serverAddress.sin_port = htons(port);
 
-  if (bind(this->serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == SOCKET_ERROR) {
-    throw std::runtime_error(fmt::format("[MDP] Failed to bind, reason: {0}", WSAGetLastError()));
+  if (bind(this->serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == SCKT_RET_ERROR) {
+    throw std::runtime_error(fmt::format("[MDP] Failed to bind, reason: {0}", SCKT_GET_ERROR));
   }
 
   int error = listen(this->serverSocket, 3);
   if (error != 0) {
-    throw std::runtime_error(fmt::format("[MDP] Failed to listen, reason: {0}", WSAGetLastError()));
+    throw std::runtime_error(fmt::format("[MDP] Failed to listen, reason: {0}", SCKT_GET_ERROR));
   }
 
   fmt::printfl("[MDP] Listening on port {0}, waiting for real HU to connect...\n", port);
 
   struct sockaddr_in clientAddress;
+#ifdef WIN32
   int addressLength = sizeof(struct sockaddr_in);
+#else
+  socklen_t addressLength = sizeof(struct sockaddr_in);
+#endif
   this->sock = accept(this->serverSocket, (struct sockaddr *)&clientAddress, &addressLength); // TODO: Error handling
   fmt::printfl("[MDP] Real HU connected!\n");
 }

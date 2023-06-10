@@ -17,5 +17,9 @@ public:
 private:
   void InitializeSSL();
 
+#ifdef WIN32
   SOCKET serverSocket;
+#else
+  int serverSocket;
+#endif
 };

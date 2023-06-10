@@ -5,6 +5,12 @@
 #include "Utils.hpp"
 #include <openssl/err.h>
 #include "Certificates.hpp"
+#include "SocketUtils.hpp"
+
+#ifndef WIN32
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
 
 HeadunitProxy::HeadunitProxy()
   : Proxy()
@@ -16,7 +22,7 @@ HeadunitProxy::HeadunitProxy()
 void HeadunitProxy::ConnectToDevice(uint16_t port)
 {
   struct sockaddr_in serverAddress;
-  if ((this->sock = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+  if ((this->sock = socket(AF_INET, SOCK_STREAM, 0)) == SCKT_RET_ERROR) {
     throw std::runtime_error("Failed to create sock");
   }
 
@@ -25,7 +31,7 @@ void HeadunitProxy::ConnectToDevice(uint16_t port)
   serverAddress.sin_port = htons(port);
 
   if (connect(this->sock, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) < 0) {
-    throw std::runtime_error(fmt::format("Failed to connect to phone, reason: {0}", WSAGetLastError()));
+    throw std::runtime_error(fmt::format("Failed to connect to phone, reason: {0}", SCKT_GET_ERROR));
   }
 }
 

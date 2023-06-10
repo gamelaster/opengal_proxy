@@ -2,10 +2,25 @@
 Is proxy server, with which you can easily sniff packets transmitted between Android Auto Headunit and Mobile Device. 
 
 # Building
-
+## Requirements
 Windows:
 ```
 vcpkg install openssl fmt readerwriterqueue winpcap
+```
+Linux/Arch:
+```
+Install openssl, fmt, readerwriterqueue and winpcap from your distro repositories (or install manually)
+```
+
+## Getting certificates and keys
+
+To eliminate a chance of Google making DMCA violation against this repository,
+you need to source the required certificates and keys by yourself.
+
+If you need help, contact me at `som (:D) marekkraus.sk`.
+
+## Compiling
+```bash
 mkdir build
 cd build
 cmake ..
@@ -21,7 +36,7 @@ cmake -b .
 # Supported platforms
 
 - [X] Windows
-- [ ] Linux
+- [X] Linux
 
 # Supported transports
 

@@ -12,6 +12,8 @@
 #include <cstdint>
 #ifdef WIN32
 #include <WinSock2.h>
+#else
+#include <sys/socket.h>
 #endif
 
 using namespace moodycamel;
@@ -35,7 +37,11 @@ protected:
   [[noreturn]] void IncomingPacketReadThread();
   [[noreturn]] void OutgoingPacketWriteThread();
 
+#ifdef WIN32
   SOCKET sock;
+#else
+  int sock;
+#endif
 
   std::thread incomingPacketReadThread;
   BlockingReaderWriterQueue<SharedPacket> incomingPacketQueue;

@@ -5,9 +5,11 @@
 #include <cstdint>
 #include "MobileDeviceProxy.hpp"
 #include "HeadunitProxy.hpp"
+#ifdef WIN32
 #include <openssl/applink.c>
-#include "Utils.hpp"
 #include "PcapDumper.hpp"
+#endif
+#include "Utils.hpp"
 
 #ifdef WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -32,8 +34,10 @@ int main(int argc, char** argv)
 
   fmt::printfl("OpenGAL Proxy v1.0\nAuthor: Marek gamelaster/gamiee Kraus\n");
   try {
+#ifdef WIN32
     auto dumper = PcapDumper();
     dumper.Run("dump.pcap");
+#endif
 
     auto mdp = MobileDeviceProxy();
     auto hup = HeadunitProxy();
@@ -55,12 +59,17 @@ int main(int argc, char** argv)
     auto hupProxy = std::thread([&] {
       while (true) {
         auto pkt = hup.DequeueIncomingPacket();
-        fmt::printfl("[HUP] Sending packet ch {1}, {0} ({2:x}) to real HU.\n", pkt->GetMessageType(), pkt->channel, pkt->flags);
+        fmt::printfl("[HUP] Sending packet ch {1}, {0} ({2:x}) to real HU.\n",
+                     static_cast<uint16_t>(pkt->GetMessageType()),
+                     pkt->channel,
+                     static_cast<uint16_t>(pkt->flags));
         mdp.EnqueueOutgoingPacket(pkt);
+#ifdef WIN32
         dumper.DumpPacket({
                             pkt,
                             SharedPacketForDumpSender::MOBILE_DEVICE
                           });
+#endif
       }
     });
     hupProxy.detach();
@@ -68,12 +77,17 @@ int main(int argc, char** argv)
     auto mdpProxy = std::thread([&] {
       while (true) {
         auto pkt = mdp.DequeueIncomingPacket();
-        fmt::printfl("[MDP] Sending packet ch {1}, {0} ({2:x}) to real MD.\n", pkt->GetMessageType(), pkt->channel, pkt->flags);
+        fmt::printfl("[MDP] Sending packet ch {1}, {0} ({2:x}) to real MD.\n",
+                     static_cast<uint16_t>(pkt->GetMessageType()),
+                     pkt->channel,
+                     static_cast<uint16_t>(pkt->flags));
         hup.EnqueueOutgoingPacket(pkt);
+#ifdef WIN32
         dumper.DumpPacket({
                             pkt,
                             SharedPacketForDumpSender::HEADUNIT
                           });
+#endif
       }
     });
     mdpProxy.detach();
